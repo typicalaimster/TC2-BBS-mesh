@@ -1,25 +1,21 @@
-FROM alpine:latest
+FROM python:3.9-alpine
 
-# Install required packages
-RUN apk add --update --no-cache git python3 py3-pip
-
+RUN apk add --update --no-cache git
 # Clone the repository
 RUN git clone https://github.com/TheCommsChannel/TC2-BBS-mesh.git
 
+# Define working directory
+
+WORKDIR /TC2-BBS-mesh
+
+
 # Install Python dependencies
-RUN pip install --no-cache-dir --break-system-packages -r /TC2-BBS-mesh/requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy configuration script
-COPY configini.sh /
-
-# Set permissions for configuration script
-RUN chmod +x /configini.sh
-
 # Define config volume
-VOLUME /config
-
-# Define working directory
-WORKDIR /config
+VOLUME /TC2-BBS-mesh/config
+VOLUME /TC2-BBS-mesh/data
 
 # Define the command to run
-CMD ["sh", "-c", " /configini.sh &&  python3 /TC2-BBS-mesh/server.py"]
+CMD ["sh", "-c", " docker/configini.sh &&  python3 server.py"]

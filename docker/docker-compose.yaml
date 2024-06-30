@@ -1,7 +1,10 @@
 services:
   tc2-bbs-mesh:
-    build: .
+    container_name: tc2-bbs-mesh
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     volumes:
       - ./config:/config
-    container_name: tc2-bbs-mesh
+      - ./data:/data

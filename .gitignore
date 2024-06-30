@@ -2,6 +2,4 @@ __pycache__/
 bulletins.db
 venv/
 .venv
-docker/config/config.ini
-docker/config/fortunes.txt
-docker/config/bulletins.db
+docker/config/

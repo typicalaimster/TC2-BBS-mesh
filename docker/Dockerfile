@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 # Copy configuration script
 # Define config volume
 VOLUME /TC2-BBS-mesh/config
-VOLUME /TC2-BBS-mesh/data
 
 # Define the command to run
 CMD ["sh", "-c", " docker/configini.sh &&  python3 server.py"]

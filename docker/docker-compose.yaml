@@ -7,8 +7,8 @@ services:
       dockerfile: Dockerfile
     restart: always
     volumes:
-      - ./config:/config
+      - ./config:/TC2-BBS-mesh/config
 #    devices:
 #      - /dev/ttyACM0:/dev/ttyACM0
-    command: sh -c 'docker/configini.sh && sleep 300 && python server.py '
+    command: sh -c 'docker/configini.sh && sleep 300 && python server.py -c config/config.ini'
 

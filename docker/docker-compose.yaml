@@ -1,7 +1,14 @@
+version: '3.8'
 services:
   tc2-bbs-mesh:
-    build: .
+    container_name: tc2-bbs-mesh
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     volumes:
-      - ./config:/config
-    container_name: tc2-bbs-mesh
+      - ./config:/TC2-BBS-mesh/config
+#    devices:
+#      - /dev/ttyACM0:/dev/ttyACM0
+    command: sh -c 'docker/configini.sh && sleep 300 && python server.py -c config/config.ini'
+

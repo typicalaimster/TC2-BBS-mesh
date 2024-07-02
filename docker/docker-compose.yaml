@@ -10,5 +10,5 @@ services:
       - ./config:/config
 #    devices:
 #      - /dev/ttyACM0:/dev/ttyACM0
-    command: sh -c 'sleep 300 && docker/configini.sh && python server.py -c config/config.ini'
+    command: sh -c 'docker/configini.sh && sleep 300 && python server.py '
 

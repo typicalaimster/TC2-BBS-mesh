@@ -17,5 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Define config volume
 VOLUME /TC2-BBS-mesh/config
 
+RUN chmod +x docker/configini.sh
 # Define the command to run
 CMD ["sh", "-c", " docker/configini.sh &&  python3 server.py"]

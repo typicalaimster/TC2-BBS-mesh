@@ -41,10 +41,10 @@ def handle_exit_command(sender_id, interface):
 
 
 def handle_help_command(sender_id, interface, state=None):
-    title = "█▓▒░ TC² BBS ░▒▓█\n"
+    title = "Hillcrest BBS\n"
     commands = [
-        "[M]ail Menu",
-        "[B]ulletin Menu",
+        "[M]ail",
+        "[B]ulletins",
         "[S]tats Menu",
         "[F]ortune",
         "[W]all of Shame",

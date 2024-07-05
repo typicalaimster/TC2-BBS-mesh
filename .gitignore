@@ -2,4 +2,4 @@ __pycache__/
 bulletins.db
 venv/
 .venv
-docker/config/
+docker/data/

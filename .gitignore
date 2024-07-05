@@ -3,3 +3,4 @@ bulletins.db
 venv/
 .venv
 docker/data/
+docker/config/

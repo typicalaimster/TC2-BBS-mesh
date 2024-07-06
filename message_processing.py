@@ -83,17 +83,20 @@ def process_message(sender_id, message, interface, is_sync_message=False):
             elif command == 'LIST_CHANNELS':
                 if step == 1:
                     handle_read_channel_command(sender_id, message, state, interface)
-        elif message.startswith("SM|"):
+        
+        elif message_lower.startswith("sm|"):
             handle_send_mail_command(sender_id, message, interface, bbs_nodes)
-        elif message.startswith("CM"):
+        elif message_lower.startswith("cm"):
             handle_check_mail_command(sender_id, interface)
-        elif message.startswith("PB|"):
+        elif message_lower.startswith("check mail"):
+            handle_check_mail_command(sender_id, interface)
+        elif message_lower.startswith("pb|"):
             handle_post_bulletin_command(sender_id, message, interface, bbs_nodes)
-        elif message.startswith("CB|"):
+        elif message_lower.startswith("cb|"):
             handle_check_bulletin_command(sender_id, message, interface)
-        elif message.startswith("CHP|"):
+        elif message_lower.startswith("chp|"):
             handle_post_channel_command(sender_id, message, interface)
-        elif message.startswith("CHL"):
+        elif message_lower.startswith("chl"):
             handle_list_channels_command(sender_id, interface)
         else:
             handle_help_command(sender_id, interface)

@@ -9,7 +9,7 @@ from command_handlers import (
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
-    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command
+    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command, handle_ping_command
 )
 
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel
@@ -20,6 +20,7 @@ command_handlers = {
     "st": handle_stats_command,
     "fo": handle_fortune_command,
     "ws": handle_wall_of_shame_command,
+    "ping:": handle_ping_command,
     "exit": handle_exit_command,
     "help": handle_help_command
 }
@@ -86,9 +87,7 @@ def process_message(sender_id, message, interface, is_sync_message=False):
         
         elif message_lower.startswith("sm|"):
             handle_send_mail_command(sender_id, message, interface, bbs_nodes)
-        elif message_lower.startswith("cm"):
-            handle_check_mail_command(sender_id, interface)
-        elif message_lower.startswith("check mail"):
+        elif message_lower.startswith("cm") or message_lower.startswith("check mail"):
             handle_check_mail_command(sender_id, interface)
         elif message_lower.startswith("pb|"):
             handle_post_bulletin_command(sender_id, message, interface, bbs_nodes)
@@ -96,7 +95,7 @@ def process_message(sender_id, message, interface, is_sync_message=False):
             handle_check_bulletin_command(sender_id, message, interface)
         elif message_lower.startswith("chp|"):
             handle_post_channel_command(sender_id, message, interface)
-        elif message_lower.startswith("chl"):
+        elif message_lower.startswith("chl") or message_lower.startswith("channel list"):
             handle_list_channels_command(sender_id, interface)
         else:
             handle_help_command(sender_id, interface)

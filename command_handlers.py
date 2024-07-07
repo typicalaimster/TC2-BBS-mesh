@@ -98,6 +98,11 @@ def handle_fortune_command(sender_id, interface):
     except Exception as e:
         send_message(f"Error generating fortune: {e}", sender_id, interface)
 
+def handle_ping_command(sender_id, interface):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        send_message("Pong! {current_time}", sender_id, interface)
+
 
 def handle_stats_steps(sender_id, message, step, interface, bbs_nodes):
     if step == 1:
@@ -679,6 +684,5 @@ def handle_quick_help_command(sender_id, interface):
         "CHP| - Post Channel\n"
         "CHL - List Channels"
     )
-
     send_message(response_part1, sender_id, interface)
     send_message(response_part2, sender_id, interface)

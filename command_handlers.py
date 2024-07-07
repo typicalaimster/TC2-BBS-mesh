@@ -49,6 +49,7 @@ def handle_help_command(sender_id, interface, state=None):
         "[St]ats Menu",
         "[Fo]rtune",
         "[WS]Wall of Shame",
+        "[Ping]",
         "[EXIT]",
         "[HELP]"
     ]
@@ -100,8 +101,8 @@ def handle_fortune_command(sender_id, interface):
 
 def handle_ping_command(sender_id, interface):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        send_message("Pong! {current_time}", sender_id, interface)
+    response = f"Pong! {current_time}"
+    send_message(response, sender_id, interface)
 
 
 def handle_stats_steps(sender_id, message, step, interface, bbs_nodes):

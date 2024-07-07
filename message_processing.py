@@ -4,12 +4,12 @@ from meshtastic import BROADCAST_NUM
 
 from command_handlers import (
     handle_mail_command, handle_bulletin_command, handle_exit_command,
-    handle_help_command, handle_stats_command, handle_fortune_command,
+    handle_help_command, handle_stats_command, handle_fortune_command, handle_ping_command,
     handle_bb_steps, handle_mail_steps, handle_stats_steps, handle_wall_of_shame_command,
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
-    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command, handle_ping_command
+    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command
 )
 
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel

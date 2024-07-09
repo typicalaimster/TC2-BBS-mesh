@@ -9,7 +9,7 @@ services:
     volumes:
       - ./docker/config:/TC2-BBS-mesh/config
       - ./docker/data:/TC2-BBS-mesh/data
-#    devices:
-#      - /dev/ttyUSB0:/dev/ttyUSB0
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
     command: sh -c './configini.sh && python server.py'
 

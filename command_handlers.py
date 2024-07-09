@@ -667,7 +667,18 @@ def handle_read_channel_command(sender_id, message, state, interface):
 
 
 def handle_quick_help_command(sender_id, interface):
-    response = ("🏃QUICK COMMANDS🏃‍➡️\nSend command and pipe symbol -> | to learn how to use each one\nSM| - Send "
-                "Mail\nCM - Check Mail (No Pipe)\nPB| - Post Bulletin\nCB| - Check Bulletins\nCHP| - Post "
-                "Channel\nCHL - List Channels (no Pipe)")
-    send_message(response, sender_id, interface)
+    response_part1 = (
+        "🏃QUICK COMMANDS🏃\n"
+        "Send command and pipe symbol -> | to learn how to use each one"
+    )
+    response_part2 = (
+        "SM| - Send Mail\n"
+        "CM - Check Mail\n"
+        "PB| - Post Bulletin\n"
+        "CB| - Check Bulletins\n"
+        "CHP| - Post Channel\n"
+        "CHL - List Channels"
+    )
+
+    send_message(response_part1, sender_id, interface)
+    send_message(response_part2, sender_id, interface)

@@ -4,7 +4,7 @@ from meshtastic import BROADCAST_NUM
 
 from command_handlers import (
     handle_mail_command, handle_bulletin_command, handle_exit_command,
-    handle_help_command, handle_stats_command, handle_fortune_command, handle_ping_command,
+    handle_help_command, handle_stats_command, handle_fortune_command,
     handle_bb_steps, handle_mail_steps, handle_stats_steps, handle_wall_of_shame_command,
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
@@ -20,7 +20,6 @@ command_handlers = {
     "st": handle_stats_command,
     "fo": handle_fortune_command,
     "ws": handle_wall_of_shame_command,
-    "ping:": handle_ping_command,
     "exit": handle_exit_command,
     "help": handle_help_command
 }
@@ -84,18 +83,17 @@ def process_message(sender_id, message, interface, is_sync_message=False):
             elif command == 'LIST_CHANNELS':
                 if step == 1:
                     handle_read_channel_command(sender_id, message, state, interface)
-        
-        elif message_lower.startswith("sm|"):
+        elif message.startswith("SM|"):
             handle_send_mail_command(sender_id, message, interface, bbs_nodes)
-        elif message_lower.startswith("cm") or message_lower.startswith("check mail"):
+        elif message.startswith("CM"):
             handle_check_mail_command(sender_id, interface)
-        elif message_lower.startswith("pb|"):
+        elif message.startswith("PB|"):
             handle_post_bulletin_command(sender_id, message, interface, bbs_nodes)
-        elif message_lower.startswith("cb|"):
+        elif message.startswith("CB|"):
             handle_check_bulletin_command(sender_id, message, interface)
-        elif message_lower.startswith("chp|"):
+        elif message.startswith("CHP|"):
             handle_post_channel_command(sender_id, message, interface)
-        elif message_lower.startswith("chl") or message_lower.startswith("channel list"):
+        elif message.startswith("CHL"):
             handle_list_channels_command(sender_id, interface)
         else:
             handle_help_command(sender_id, interface)

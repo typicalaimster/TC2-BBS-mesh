@@ -1,11 +1,11 @@
 #!/bin/sh
-if [ -f "config/config.ini" ]; then
-    cp "config/config.ini" "config.ini"
+if [ -f "docker/config.ini" ]; then
+    cp "docker/config.ini" "config.ini"
 fi
-if [ -f "config/fortunes.txt" ]; then
-    cp "config/fortunes.txt" "fortunes.txt"
+if [ -f "docker/fortunes.txt" ]; then
+    cp "docker/fortunes.txt" "fortunes.txt"
 fi
-if [ -f "data/bulletins.db" ]; then
-   ln -fs data/bulletins.db
+if [ -f "docker/bulletins.db" ]; then
+   ln -fs docker/bulletins.db
 fi
 

@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy configuration script
 # Define config volume
-# VOLUME /TC2-BBS-mesh/config
+# VOLUME /TC2-BBS-mesh/docker
 
 RUN chmod +x configini.sh
 # Define the command to run

@@ -4,7 +4,7 @@ services:
     container_name: tc2-bbs-mesh
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     restart: always
     volumes:
       - ./docker:/TC2-BBS-mesh/docker

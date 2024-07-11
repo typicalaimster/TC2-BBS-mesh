@@ -4,18 +4,32 @@ import time
 
 from meshtastic import BROADCAST_NUM
 
-from config_init import initialize_config
 from db_operations import (
     add_bulletin, add_mail, delete_mail,
     get_bulletin_content, get_bulletins,
     get_mail, get_mail_content,
-    add_channel, get_channels
+    add_channel, get_channels, get_sender_id_by_mail_id
 )
 from utils import (
     get_node_id_from_num, get_node_info,
     get_node_short_name, send_message,
     update_user_state
 )
+
+
+def handle_help_command(sender_id, interface, menu_name=None):
+    if menu_name:
+        update_user_state(sender_id, {'command': 'MENU', 'menu': menu_name, 'step': 1})
+        if menu_name == 'bbs':
+            response = "📰BBS Menu📰\n[M]ail\n[B]ulletins\n[C]hannel Dir\nE[X]IT"
+        elif menu_name == 'utilities':
+            response = "🛠️Utilities Menu🛠️\n[S]tats\n[F]ortune\n[W]all of Shame\nE[X]IT"
+    else:
+        update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})  # Reset to main menu state
+        response = "💾TC² BBS💾\n[Q]uick Commands\n[B]BS\n[U]tilities\nE[X]IT"
+    send_message(response, sender_id, interface)
+
+
 
 
 def get_node_name(node_id, interface):
@@ -26,15 +40,16 @@ def get_node_name(node_id, interface):
 
 
 def handle_mail_command(sender_id, interface):
-    response = "✉️ MAIL MENU ✉️\nWhat would you like to do with mail?\n[0]Read  [1]Send  [2]Exit"
+    response = "✉️Mail Menu✉️\nWhat would you like to do with mail?\n[R]ead  [S]end E[X]IT"
     send_message(response, sender_id, interface)
     update_user_state(sender_id, {'command': 'MAIL', 'step': 1})
 
 
+
 def handle_bulletin_command(sender_id, interface):
-    response = "📰 BULLETIN MENU 📰\nWhich board would you like to enter?\n[0]General  [1]Info  [2]News  [3]Urgent  [4]Exit"
+    response = "📰Bulletin Menu📰\nWhich board would you like to enter?\n[G]eneral  [I]nfo  [N]ews  [U]rgent"
     send_message(response, sender_id, interface)
-    update_user_state(sender_id, {'command': 'BULLETIN', 'step': 1})
+    update_user_state(sender_id, {'command': 'BULLETIN_MENU', 'step': 1})
 
 
 def handle_exit_command(sender_id, interface):
@@ -42,45 +57,8 @@ def handle_exit_command(sender_id, interface):
     update_user_state(sender_id, None)
 
 
-def handle_help_command(sender_id, interface, state=None):
-    title = "💾TC2 BBS💾\n"
-    commands = [
-        "[QCH] - Quick Commands",
-        "[St]ats Menu",
-        "[Fo]rtune",
-        "[WS]Wall of Shame",
-        "[EXIT]",
-        "[HELP]"
-    ]
-    if state and 'command' in state:
-        current_command = state['command']
-        if current_command == 'MAIL':
-            commands = [
-                "[0]Read Mail",
-                "[1]Send Mail",
-                "[2]Exit Mail Menu"
-            ]
-        elif current_command == 'BULLETIN':
-            commands = [
-                "[0]General Board",
-                "[1]Info Board",
-                "[2]News Board",
-                "[3]Urgent Board",
-                "[4]Exit Bulletin Menu"
-            ]
-        elif current_command == 'STATS':
-            commands = [
-                "[0]Total Nodes",
-                "[1]Total HW Models",
-                "[2]Total Roles",
-                "[3]Back"
-            ]
-    response = title + "Available commands:\n" + "\n".join(commands)
-    send_message(response, sender_id, interface)
-
-
 def handle_stats_command(sender_id, interface):
-    response = "What stats would you like to view?\n[0]Node Numbers  [1]Hardware  [2]Roles  [3]Main Menu"
+    response = "📊Stats Menu📊\nWhat stats would you like to view?\n[N]odes  [H]ardware  [R]oles  E[X]IT"
     send_message(response, sender_id, interface)
     update_user_state(sender_id, {'command': 'STATS', 'step': 1})
 
@@ -99,18 +77,34 @@ def handle_fortune_command(sender_id, interface):
         send_message(f"Error generating fortune: {e}", sender_id, interface)
 
 
-def handle_stats_steps(sender_id, message, step, interface, bbs_nodes):
+def handle_stats_steps(sender_id, message, step, interface):
     if step == 1:
-        choice = message.upper()
-        if choice == '3':
+        choice = message.lower()
+        if choice == 'x':
             handle_help_command(sender_id, interface)
             return
-        choice = int(choice)
-        if choice == 0:
-            response = "Select time period for total nodes:\n[0]ALL  [1]Last 24 Hours  [2]Last 8 Hours  [3]Last Hour"
+        elif choice == 'n':
+            current_time = int(time.time())
+            timeframes = {
+                "All time": None,
+                "Last 24 hours": 86400,
+                "Last 8 hours": 28800,
+                "Last hour": 3600
+            }
+            total_nodes_summary = []
+
+            for period, seconds in timeframes.items():
+                if seconds is None:
+                    total_nodes = len(interface.nodes)
+                else:
+                    time_limit = current_time - seconds
+                    total_nodes = sum(1 for node in interface.nodes.values() if node.get('lastHeard', 0) >= time_limit)
+                total_nodes_summary.append(f"- {period}: {total_nodes}")
+
+            response = "Total nodes seen:\n" + "\n".join(total_nodes_summary)
             send_message(response, sender_id, interface)
-            update_user_state(sender_id, {'command': 'STATS', 'step': 2})
-        elif choice == 1:
+            handle_stats_command(sender_id, interface)
+        elif choice == 'h':
             hw_models = {}
             for node in interface.nodes.values():
                 hw_model = node['user'].get('hwModel', 'Unknown')
@@ -118,7 +112,7 @@ def handle_stats_steps(sender_id, message, step, interface, bbs_nodes):
             response = "Hardware Models:\n" + "\n".join([f"{model}: {count}" for model, count in hw_models.items()])
             send_message(response, sender_id, interface)
             handle_stats_command(sender_id, interface)
-        elif choice == 2:
+        elif choice == 'r':
             roles = {}
             for node in interface.nodes.values():
                 role = node['user'].get('role', 'Unknown')
@@ -127,94 +121,56 @@ def handle_stats_steps(sender_id, message, step, interface, bbs_nodes):
             send_message(response, sender_id, interface)
             handle_stats_command(sender_id, interface)
 
-    elif step == 2:
-        choice = int(message)
-        current_time = int(time.time())
-        if choice == 0:
-            total_nodes = len(interface.nodes)
-            send_message(f"Total nodes seen: {total_nodes}", sender_id, interface)
-        else:
-            time_limits = [86400, 28800, 3600]  # Last 24 hours, Last 8 hours, Last hour
-            time_limit = current_time - time_limits[choice - 1]
-            total_nodes = 0
-            for node in interface.nodes.values():
-                last_heard = node.get('lastHeard', 0)
-                if last_heard is not None and last_heard >= time_limit:
-                    total_nodes += 1
-                    logging.info(f"Node {node.get('user', {}).get('longName', 'Unknown')} heard at {last_heard}, within limit {time_limit}")
-            timeframes = ["24 hours", "8 hours", "hour"]
-            send_message(f"Total nodes seen in the last {timeframes[choice - 1]}: {total_nodes}", sender_id, interface)
-        handle_stats_steps(sender_id, '0', 1, interface, bbs_nodes)
 
 
 def handle_bb_steps(sender_id, message, step, state, interface, bbs_nodes):
     boards = {0: "General", 1: "Info", 2: "News", 3: "Urgent"}
-
     if step == 1:
-        if message == '4':
-            handle_help_command(sender_id, interface)
+        if message.lower() == 'e':
+            handle_help_command(sender_id, interface, 'bbs')
             return
-        board_name = boards.get(int(message))
-        if board_name:
-            response = f"What would you like to do in the {board_name} board?\n[0]View Bulletins  [1]Post Bulletin  [2]Exit"
-            send_message(response, sender_id, interface)
-            update_user_state(sender_id, {'command': 'BULLETIN', 'step': 2, 'board': board_name})
-        else:
-            handle_help_command(sender_id, interface)
-            update_user_state(sender_id, None)
+        board_name = boards[int(message)]
+        response = f"What would you like to do in the {board_name} board?\n[R]ead  [P]ost"
+        send_message(response, sender_id, interface)
+        update_user_state(sender_id, {'command': 'BULLETIN_ACTION', 'step': 2, 'board': board_name})
 
     elif step == 2:
-        if message == '2':
-            # Return to the bulletin menu
-            response = "📰 BULLETIN MENU 📰\nWhich board would you like to enter?\n[0]General  [1]Info  [2]News  [3]Urgent  [4]Exit"
-            send_message(response, sender_id, interface)
-            update_user_state(sender_id, {'command': 'BULLETIN', 'step': 1})
-            return
-        if message == '0':
-            board_name = state['board']
+        board_name = state['board']
+        if message.lower() == 'r':
             bulletins = get_bulletins(board_name)
-            if (bulletins):
+            if bulletins:
                 send_message(f"Select a bulletin number to view from {board_name}:", sender_id, interface)
                 for bulletin in bulletins:
                     send_message(f"[{bulletin[0]}] {bulletin[1]}", sender_id, interface)
-                update_user_state(sender_id, {'command': 'BULLETIN', 'step': 3, 'board': board_name})
+                update_user_state(sender_id, {'command': 'BULLETIN_READ', 'step': 3, 'board': board_name})
             else:
                 send_message(f"No bulletins in {board_name}.", sender_id, interface)
-                # Go back to the board menu
-                response = f"What would you like to do in the {board_name} board?\n[0]View Bulletins  [1]Post Bulletin  [2]Exit"
-                send_message(response, sender_id, interface)
-                update_user_state(sender_id, {'command': 'BULLETIN', 'step': 2, 'board': board_name})
-
-        elif message == '1':
+                handle_bb_steps(sender_id, 'e', 1, state, interface, bbs_nodes)
+        elif message.lower() == 'p':
+            if board_name.lower() == 'urgent':
+                node_id = get_node_id_from_num(sender_id, interface)
+                allowed_nodes = interface.allowed_nodes
+                print(f"Checking permissions for node_id: {node_id} with allowed_nodes: {allowed_nodes}")  # Debug statement
+                if allowed_nodes and node_id not in allowed_nodes:
+                    send_message("You don't have permission to post to this board.", sender_id, interface)
+                    handle_bb_steps(sender_id, 'e', 1, state, interface, bbs_nodes)
+                    return
             send_message("What is the subject of your bulletin? Keep it short.", sender_id, interface)
-            update_user_state(sender_id, {'command': 'BULLETIN', 'step': 4, 'board': state['board']})
+            update_user_state(sender_id, {'command': 'BULLETIN_POST', 'step': 4, 'board': board_name})
 
     elif step == 3:
         bulletin_id = int(message)
         sender_short_name, date, subject, content, unique_id = get_bulletin_content(bulletin_id)
         send_message(f"From: {sender_short_name}\nDate: {date}\nSubject: {subject}\n- - - - - - -\n{content}", sender_id, interface)
         board_name = state['board']
-        response = f"What would you like to do in the {board_name} board?\n[0]View Bulletins  [1]Post Bulletin  [2]Exit"
-        send_message(response, sender_id, interface)
-        update_user_state(sender_id, {'command': 'BULLETIN', 'step': 2, 'board': board_name})
+        handle_bb_steps(sender_id, 'e', 1, state, interface, bbs_nodes)
 
     elif step == 4:
         subject = message
         send_message("Send the contents of your bulletin. Send a message with END when finished.", sender_id, interface)
-        update_user_state(sender_id, {'command': 'BULLETIN', 'step': 6, 'board': state['board'], 'subject': subject, 'content': ''})
+        update_user_state(sender_id, {'command': 'BULLETIN_POST_CONTENT', 'step': 5, 'board': state['board'], 'subject': subject, 'content': ''})
 
     elif step == 5:
-        if message.lower() == "y":
-            bulletins = get_bulletins(state['board'])
-            send_message(f"Select a bulletin number to view from {state['board']}:", sender_id, interface)
-            for bulletin in bulletins:
-                send_message(f"[{bulletin[0]}]\nSubject: {bulletin[1]}", sender_id, interface)
-            update_user_state(sender_id, {'command': 'BULLETIN', 'step': 3, 'board': state['board']})
-        else:
-            send_message("Okay, feel free to send another command.", sender_id, interface)
-            update_user_state(sender_id, None)
-
-    elif step == 6:
         if message.lower() == "end":
             board = state['board']
             subject = state['subject']
@@ -228,48 +184,44 @@ def handle_bb_steps(sender_id, message, step, state, interface, bbs_nodes):
             sender_short_name = node_info['user'].get('shortName', f"Node {sender_id}")
             unique_id = add_bulletin(board, sender_short_name, subject, content, bbs_nodes, interface)
             send_message(f"Your bulletin '{subject}' has been posted to {board}.\n(╯°□°)╯📄📌[{board}]", sender_id, interface)
-            response = f"What would you like to do in the {board} board?\n[0]View Bulletins  [1]Post Bulletin  [2]Exit"
-            send_message(response, sender_id, interface)
-            update_user_state(sender_id, {'command': 'BULLETIN', 'step': 2, 'board': board})
+            handle_bb_steps(sender_id, 'e', 1, state, interface, bbs_nodes)
         else:
             state['content'] += message + "\n"
             update_user_state(sender_id, state)
 
 
+
 def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
     if step == 1:
-        choice = message
-        if choice == '0':
+        choice = message.lower()
+        if choice == 'r':
             sender_node_id = get_node_id_from_num(sender_id, interface)
             mail = get_mail(sender_node_id)
             if mail:
                 send_message(f"You have {len(mail)} mail messages. Select a message number to read:", sender_id, interface)
                 for msg in mail:
-                    send_message(f"✉️ {msg[0]} ✉️\nDate: {msg[3]}\nFrom: {msg[1]}\nSubject: {msg[2]}", sender_id, interface)
+                    send_message(f"-{msg[0]}-\nDate: {msg[3]}\nFrom: {msg[1]}\nSubject: {msg[2]}", sender_id, interface)
                 update_user_state(sender_id, {'command': 'MAIL', 'step': 2})
             else:
-                send_message("There are no messages in your mailbox.\n(`⌒`)", sender_id, interface)
+                send_message("There are no messages in your mailbox.📭", sender_id, interface)
                 update_user_state(sender_id, None)
-        elif choice == '1':
+        elif choice == 's':
             send_message("What is the Short Name of the node you want to leave a message for?", sender_id, interface)
             update_user_state(sender_id, {'command': 'MAIL', 'step': 3})
-        elif choice == '2':
+        elif choice == 'x':
             handle_help_command(sender_id, interface)
 
     elif step == 2:
         mail_id = int(message)
         try:
-            
-            # ERROR: sender_id is not what is stored in the DB
             sender_node_id = get_node_id_from_num(sender_id, interface)
             sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_node_id)
             send_message(f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n{content}", sender_id, interface)
-            send_message("Would you like to delete this message now that you've viewed it? Y/N", sender_id, interface)
-            update_user_state(sender_id, {'command': 'MAIL', 'step': 4, 'mail_id': mail_id, 'unique_id': unique_id})
+            send_message("What would you like to do with this message?\n[K]eep  [D]elete  [R]eply", sender_id, interface)
+            update_user_state(sender_id, {'command': 'MAIL', 'step': 4, 'mail_id': mail_id, 'unique_id': unique_id, 'sender': sender, 'subject': subject, 'content': content})
         except TypeError:
-            # get_main_content returned None. Node tried to access somebody's else mail message
             logging.info(f"Node {sender_id} tried to access non-existent message")
-            send_message(f"Mail not found", sender_id, interface)
+            send_message("Mail not found", sender_id, interface)
             update_user_state(sender_id, None)
 
     elif step == 3:
@@ -290,14 +242,19 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
             update_user_state(sender_id, {'command': 'MAIL', 'step': 6, 'nodes': nodes})
 
     elif step == 4:
-        if message.lower() == "y":
+        if message.lower() == "d":
             unique_id = state['unique_id']
             sender_node_id = get_node_id_from_num(sender_id, interface)
             delete_mail(unique_id, sender_node_id, bbs_nodes, interface)
             send_message("The message has been deleted 🗑️", sender_id, interface)
+            update_user_state(sender_id, None)
+        elif message.lower() == "r":
+            sender = state['sender']
+            send_message(f"Send your reply to {sender} now, followed by a message with END", sender_id, interface)
+            update_user_state(sender_id, {'command': 'MAIL', 'step': 7, 'reply_to_mail_id': state['mail_id'], 'subject': f"Re: {state['subject']}", 'content': ''})
         else:
-            send_message("The message has been kept in your inbox.✉️\nJust don't let it get as messy as your regular email inbox (ಠ_ಠ)", sender_id, interface)
-        update_user_state(sender_id, None)
+            send_message("The message has been kept in your inbox.✉️", sender_id, interface)
+            update_user_state(sender_id, None)
 
     elif step == 5:
         subject = message
@@ -314,10 +271,14 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
 
     elif step == 7:
         if message.lower() == "end":
-            recipient_id = state['recipient_id']
+            if 'reply_to_mail_id' in state:
+                recipient_id = get_sender_id_by_mail_id(state['reply_to_mail_id'])  # Get the sender ID from the mail ID
+            else:
+                recipient_id = state.get('recipient_id')
             subject = state['subject']
             content = state['content']
             recipient_name = get_node_name(recipient_id, interface)
+
             sender_short_name = get_node_short_name(get_node_id_from_num(sender_id, interface), interface)
             unique_id = add_mail(get_node_id_from_num(sender_id, interface), sender_short_name, recipient_id, subject, content, bbs_nodes, interface)
             send_message(f"Mail has been posted to the mailbox of {recipient_name}.\n(╯°□°)╯📨📬", sender_id, interface)
@@ -353,18 +314,18 @@ def handle_wall_of_shame_command(sender_id, interface):
 
 
 def handle_channel_directory_command(sender_id, interface):
-    response = "📚 CHANNEL DIRECTORY 📚\nWhat would you like to do in the Channel Directory?\n[0]View  [1]Post  [2]Exit"
+    response = "📚CHANNEL DIRECTORY📚\nWhat would you like to do?\n[V]iew  [P]ost  E[X]IT"
     send_message(response, sender_id, interface)
     update_user_state(sender_id, {'command': 'CHANNEL_DIRECTORY', 'step': 1})
 
 
 def handle_channel_directory_steps(sender_id, message, step, state, interface):
     if step == 1:
-        choice = message
-        if choice == '2':
+        choice = message.lower()
+        if choice == 'x':
             handle_help_command(sender_id, interface)
             return
-        elif choice == '0':
+        elif choice == 'v':
             channels = get_channels()
             if channels:
                 response = "Select a channel number to view:\n" + "\n".join(
@@ -374,7 +335,7 @@ def handle_channel_directory_steps(sender_id, message, step, state, interface):
             else:
                 send_message("No channels available in the directory.", sender_id, interface)
                 handle_channel_directory_command(sender_id, interface)
-        elif choice == '1':
+        elif choice == 'p':
             send_message("Name your channel for the directory:", sender_id, interface)
             update_user_state(sender_id, {'command': 'CHANNEL_DIRECTORY', 'step': 3})
 
@@ -401,9 +362,9 @@ def handle_channel_directory_steps(sender_id, message, step, state, interface):
 
 def handle_send_mail_command(sender_id, message, interface, bbs_nodes):
     try:
-        parts = message.split("|", 3)
+        parts = message.split(",,", 3)
         if len(parts) != 4:
-            send_message("Send Mail Quick Command format:\nSM|{short_name}|{subject}|{message}", sender_id, interface)
+            send_message("Send Mail Quick Command format:\nSM,,{short_name},,{subject},,{message}", sender_id, interface)
             return
 
         _, short_name, subject, content = parts
@@ -424,7 +385,7 @@ def handle_send_mail_command(sender_id, message, interface, bbs_nodes):
                              content, bbs_nodes, interface)
         send_message(f"Mail has been sent to {recipient_name}.", sender_id, interface)
 
-        notification_message = f"You have a new mail message from {sender_short_name}. Check your mailbox by responding to this message with M."
+        notification_message = f"You have a new mail message from {sender_short_name}. Check your mailbox by responding to this message with CM."
         send_message(notification_message, recipient_id, interface)
 
     except Exception as e:
@@ -442,7 +403,7 @@ def handle_check_mail_command(sender_id, interface):
 
         response = "📬 You have the following messages:\n"
         for i, msg in enumerate(mail):
-            response += f"{i + 1:02d}. From: {msg[1]}, Subject: {msg[2]}, Date: {msg[3]}\n"
+            response += f"{i + 1:02d}. From: {msg[1]}, Subject: {msg[2]}\n"
         response += "\nPlease reply with the number of the message you want to read."
         send_message(response, sender_id, interface)
 
@@ -497,9 +458,9 @@ def handle_delete_mail_confirmation(sender_id, message, state, interface, bbs_no
 
 def handle_post_bulletin_command(sender_id, message, interface, bbs_nodes):
     try:
-        parts = message.split("|", 3)
+        parts = message.split(",,", 3)
         if len(parts) != 4:
-            send_message("Post Bulletin Quick Command format:\nPB|{board_name}|{subject}|{content}", sender_id, interface)
+            send_message("Post Bulletin Quick Command format:\nPB,,{board_name},,{subject},,{content}", sender_id, interface)
             return
 
         _, board_name, subject, content = parts
@@ -508,7 +469,6 @@ def handle_post_bulletin_command(sender_id, message, interface, bbs_nodes):
         unique_id = add_bulletin(board_name, sender_short_name, subject, content, bbs_nodes, interface)
         send_message(f"Your bulletin '{subject}' has been posted to {board_name}.", sender_id, interface)
 
-        # New logic to send group chat notification for urgent bulletins
         if board_name.lower() == "urgent":
             notification_message = f"💥NEW URGENT BULLETIN💥\nFrom: {sender_short_name}\nTitle: {subject}"
             send_message(notification_message, BROADCAST_NUM, interface)
@@ -520,9 +480,9 @@ def handle_post_bulletin_command(sender_id, message, interface, bbs_nodes):
 
 def handle_check_bulletin_command(sender_id, message, interface):
     try:
-        parts = message.split("|", 2)
+        parts = message.split(",,", 2)
         if len(parts) != 2:
-            send_message("Check Bulletins Quick Command format:\nCB|{board_name}", sender_id, interface)
+            send_message("Check Bulletins Quick Command format:\nCB,,{board_name}", sender_id, interface)
             return
 
         _, board_name = parts
@@ -570,7 +530,7 @@ def handle_post_channel_command(sender_id, message, interface):
     try:
         parts = message.split("|", 3)
         if len(parts) != 3:
-            send_message("Post Channel Quick Command format:\nCHP|{channel_name}|{channel_url}", sender_id, interface)
+            send_message("Post Channel Quick Command format:\nCHP,,{channel_name},,{channel_url}", sender_id, interface)
             return
 
         _, channel_name, channel_url = parts
@@ -590,7 +550,7 @@ def handle_check_channel_command(sender_id, interface):
             send_message("No channels available in the directory.", sender_id, interface)
             return
 
-        response = "📚 Available Channels:\n"
+        response = "Available Channels:\n"
         for i, channel in enumerate(channels):
             response += f"{i + 1:02d}. Name: {channel[0]}\n"
         response += "\nPlease reply with the number of the channel you want to view."
@@ -632,7 +592,7 @@ def handle_list_channels_command(sender_id, interface):
             send_message("No channels available in the directory.", sender_id, interface)
             return
 
-        response = "📚 Available Channels:\n"
+        response = "Available Channels:\n"
         for i, channel in enumerate(channels):
             response += f"{i+1:02d}. Name: {channel[0]}\n"
         response += "\nPlease reply with the number of the channel you want to view."
@@ -667,18 +627,6 @@ def handle_read_channel_command(sender_id, message, state, interface):
 
 
 def handle_quick_help_command(sender_id, interface):
-    response_part1 = (
-        "🏃QUICK COMMANDS🏃\n"
-        "Send command and pipe symbol -> | to learn how to use each one"
-    )
-    response_part2 = (
-        "SM| - Send Mail\n"
-        "CM - Check Mail\n"
-        "PB| - Post Bulletin\n"
-        "CB| - Check Bulletins\n"
-        "CHP| - Post Channel\n"
-        "CHL - List Channels"
-    )
-
-    send_message(response_part1, sender_id, interface)
-    send_message(response_part2, sender_id, interface)
+    response = ("✈️QUICK COMMANDS✈️\nSend command below for usage info:\nSM,, - Send "
+                "Mail\nCM - Check Mail\nPB,, - Post Bulletin\nCB,, - Check Bulletins\n")
+    send_message(response, sender_id, interface)

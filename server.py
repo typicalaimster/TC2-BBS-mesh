@@ -2,8 +2,8 @@
 
 """
 TC²-BBS Server for Meshtastic by TheCommsChannel (TC²)
-Date: 06/25/2024
-Version: 0.1.0
+Date: 07/09/2024
+Version: 0.1.4
 
 Description:
 The system allows for mail message handling, bulletin boards, and a channel
@@ -35,23 +35,19 @@ Meshtastic Version
 """
     print(banner)
 
-
-
 def main():
     display_banner()
-    # config, interface_type, hostname, port, bbs_nodes = initialize_config()
     args = init_cli_parser()
     config_file = None
     if args.config is not None:
         config_file = args.config
     system_config = initialize_config(config_file)
-    
+
     merge_config(system_config, args)
-    
-    # print(f"{system_config=}")
-    
+
     interface = get_interface(system_config)
     interface.bbs_nodes = system_config['bbs_nodes']
+    interface.allowed_nodes = system_config['allowed_nodes']
 
     logging.info(f"TC²-BBS is running on {system_config['interface_type']} interface...")
 

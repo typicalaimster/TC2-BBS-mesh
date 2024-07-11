@@ -4,3 +4,6 @@ venv/
 .venv
 docker/data/
 docker/config/
+.idea
+config.ini
+fortunes.txt

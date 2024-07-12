@@ -349,7 +349,7 @@ def handle_channel_directory_steps(sender_id, message, step, state, interface):
 
     elif step == 3:
         channel_name = message
-        send_message("Send a message with your channel URL:", sender_id, interface)
+        send_message("Send a message with your channel URL or PSK:", sender_id, interface)
         update_user_state(sender_id, {'command': 'CHANNEL_DIRECTORY', 'step': 4, 'channel_name': channel_name})
 
     elif step == 4:
@@ -480,12 +480,13 @@ def handle_post_bulletin_command(sender_id, message, interface, bbs_nodes):
 
 def handle_check_bulletin_command(sender_id, message, interface):
     try:
-        parts = message.split(",,", 2)
-        if len(parts) != 2:
+        # Split the message only once
+        parts = message.split(",,", 1)
+        if len(parts) != 2 or not parts[1].strip():
             send_message("Check Bulletins Quick Command format:\nCB,,{board_name}", sender_id, interface)
             return
 
-        _, board_name = parts
+        board_name = parts[1].strip()
         bulletins = get_bulletins(board_name)
         if not bulletins:
             send_message(f"No bulletins available on {board_name} board.", sender_id, interface)

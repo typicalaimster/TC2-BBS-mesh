@@ -7,8 +7,9 @@ services:
       dockerfile: docker/Dockerfile
     restart: always
     volumes:
-      - ./docker:/TC2-BBS-mesh/docker
+      - ./bulletins.db:/TC2-BBS-mesh/bulletins.db
+      - ./config.ini:/TC2-BBS-mesh/config.ini
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0
-    command: sh -c './configini.sh && python server.py'
+    command: sh -c 'python server.py'
 
